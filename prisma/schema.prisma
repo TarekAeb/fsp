@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator kysely {
+  provider     = "prisma-kysely"
+  output       = "../src/db"
+  fileName     = "types.ts"
+  enumFileName = "enums.ts"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  username      String?         @unique
+  email         String          @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          UserRole        @default(USER)
+  accounts      Account[]
+  favorites     UserFavorite[]
+  reviews       Review[]
+  sessions      Session[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  id         String @id @default(cuid())
+  email      String
+  token      String @unique
+  expires    DateTime
+
+  @@unique([email, token])
+}
+
+model ResetPasswordToken {
+  id         String @id @default(cuid())
+  email      String
+  token      String @unique
+  expires    DateTime
+
+  @@unique([email, token])
+}
+
+model Actor {
+  id           Int      @id @default(autoincrement())
+  name         String    @db.VarChar(255)
+  nationality  String    @db.VarChar(100)
+  dateBirth    DateTime
+  bio          String?
+  photoUrl     String?
+  movieCast    MovieCast[]
+}
+
+enum MovieType {
+  short_movie
+  documentary
+  animation
+}
+
+model Movie {
+  id             Int          @id @default(autoincrement())
+  title          String        @db.VarChar(255)
+  releaseDate    DateTime
+  durationMinutes Int         
+  rating         Float          
+  description    String        @db.Text
+  language       String        @db.VarChar(10)
+  posterUrl      String
+  budget         Int?
+  boxOffice      Int?
+  trailerUrl     String?
+  genres         MovieGenre[]
+  directors      MovieDirector[]
+  cast           MovieCast[]
+  favorites      UserFavorite[]
+  reviews        Review[]
+  videoQualities VideoQuality[]
+  subtitles      VideoSubtitle[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  type           MovieType
+}
+
+model VideoQuality {
+  id        Int      @id @default(autoincrement())
+  movieId   Int
+  quality   String   @db.VarChar(10) // "1080p", "720p", "480p", "360p"
+  filePath  String   @db.VarChar(500)
+  fileSize  BigInt
+  duration  Int      // duration in seconds
+  bitrate   String?  @db.VarChar(20)
+  codec     String?  @db.VarChar(50)
+  createdAt DateTime @default(now())
+  
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@unique([movieId, quality])
+}
+
+model VideoSubtitle {
+  id        Int      @id @default(autoincrement())
+  movieId   Int
+  language  String   @db.VarChar(10) // "en", "es", "fr", etc.
+  label     String   @db.VarChar(50) // "English", "Spanish", etc.
+  filePath  String   @db.VarChar(500)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@unique([movieId, language])
+}
+
+model Genre {
+  id    Int         @id @default(autoincrement())
+  name  String      @unique @db.VarChar(50)
+  movies MovieGenre[]
+}
+
+model MovieGenre {
+  movieId Int
+  genreId Int
+
+  movie   Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genre   Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, genreId])
+}
+
+model Director {
+  id           Int          @id @default(autoincrement())
+  name         String       @unique @db.VarChar(255)
+  nationality  String       @db.VarChar(100)
+  dateBirth    DateTime
+  movies       MovieDirector[]
+  photoUrl     String
+}
+
+model MovieDirector {
+  movieId    Int
+  directorId Int
+
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  director  Director @relation(fields: [directorId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, directorId])
+}
+
+model MovieCast {
+  movieId  Int
+  actorId  Int
+  roleName String @db.VarChar(100)
+
+  movie  Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  actor  Actor @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, actorId])
+}
+
+model UserFavorite {
+  userId  String
+  movieId Int
+  addedAt DateTime @default(now())
+
+  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie  Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@id([userId, movieId])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  movieId   Int
+  rating    Int      
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, movieId])
+}

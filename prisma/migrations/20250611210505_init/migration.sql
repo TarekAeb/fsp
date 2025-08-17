@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Movie" ALTER COLUMN "rating" SET DATA TYPE DOUBLE PRECISION;
+
+-- AlterTable
+ALTER TABLE "User" ALTER COLUMN "username" DROP NOT NULL;
