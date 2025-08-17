@@ -5,7 +5,6 @@ import { ProfileSection } from "@/components/dashboard/profile-section"
 import { PersonalInfoSection } from "@/components/dashboard/personal-info-section"
 import { ProfilePhotoSection } from "@/components/dashboard/profile-photo-section"
 import { prisma } from "@/lib/prisma"
-import Image from "next/image"
 export default async function ProfilePage() {
   const session = await getServerSession(authConfig)
 

@@ -9,10 +9,17 @@ import useSWR from "swr";
 type Movie = {
   id: number;
   title: string;
-  rating: number;
   posterUrl: string;
-  trailerUrl: string | null;
-  addedAt?: Date;
+  releaseDate?: Date;
+  durationMinutes?: number;
+  rating?: number;
+  description?: string;
+  language?: string;
+  genres?: {
+    id: number;
+    name: string;
+  }[];
+  type: "short_movie" | "documentary" | "animation";
 };
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());

@@ -15,13 +15,27 @@ type Movie = {
     releaseDate: string | Date;
     type: "short_movie" | "documentary" | "animation";
 };
-
+type MovieResponse = {
+    id: number;
+    title: string;
+    releaseDate: Date;
+    durationMinutes: number;
+    rating: number;
+    description: string;
+    language: string;
+    posterUrl: string;
+    genres?: {
+        id: number;
+        name: string;
+    }[];
+    type: "short_movie" | "documentary" | "animation";
+}
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 const fetcher1 = (url: string) => fetch(url).then(res => res.json());
 
 export default function HomePage() {
     const { data: movie, error, isLoading } = useSWR<Movie>("/api/last-movie", fetcher);
-    const { data: movies, error: moviesError, isLoading: moviesLoading } = useSWR<any>("/api/admin/movies", fetcher1);
+    const { data: movies, error: moviesError, isLoading: moviesLoading } = useSWR<MovieResponse[]>("/api/admin/movies", fetcher1);
     console.log(movies);
 
     // Handle loading state

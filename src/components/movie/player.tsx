@@ -1,6 +1,6 @@
-"use client"
+"use client";
 // src/components/movie/player.tsx - Updated duration handling
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Play,
   Pause,
@@ -10,16 +10,15 @@ import {
   ArrowLeft,
   Settings,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import VolumeControl from "./VolumeControl";
 import Image from "next/image";
-
+import {toast} from "sonner"
 interface VideoPlayerProps {
-    title: string;
-    movieId: string;
-    posterUrl?: string; // Add this
-    onExit?: () => void;
-    isVisible?: boolean;
+  title: string;
+  movieId: number;
+  posterUrl?: string; // Add this
+  onExit?: () => void;
+  isVisible?: boolean;
 }
 
 interface VideoQuality {
@@ -42,17 +41,15 @@ interface VideoData {
   subtitles: Record<string, SubtitleData>;
 }
 
-
-
 // In the component:
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
-    title,
-    movieId,
-    posterUrl, // Add this
-    onExit,
-    isVisible = false
+  title,
+  movieId,
+  posterUrl, // Add this
+  onExit,
+  isVisible = false,
 }) => {
-  const { toast } = useToast();
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLInputElement>(null);
@@ -90,7 +87,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [movieId, isVisible]);
 
-  const fetchVideoData = async () => {
+  const fetchVideoData = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log("Fetching video data for movie:", movieId);
@@ -132,15 +129,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
     } catch (error) {
       console.error("Error fetching video data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load video data",
-        variant: "destructive",
-      });
+      toast.error("Failed to load video data");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [movieId, toast]);
 
   // FORCE FULLSCREEN ON MOUNT
   useEffect(() => {
@@ -152,14 +145,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
           if (document.documentElement.requestFullscreen) {
             await document.documentElement.requestFullscreen();
-          } else if ((document.documentElement as any).mozRequestFullScreen) {
-            await (document.documentElement as any).mozRequestFullScreen();
-          } else if (
-            (document.documentElement as any).webkitRequestFullscreen
-          ) {
-            await (document.documentElement as any).webkitRequestFullscreen();
-          } else if ((document.documentElement as any).msRequestFullscreen) {
-            await (document.documentElement as any).msRequestFullscreen();
+          } else if ("mozRequestFullScreen" in document.documentElement) {
+            await (
+              document.documentElement as HTMLElement & {
+                mozRequestFullScreen: () => Promise<void>;
+              }
+            ).mozRequestFullScreen();
+          } else if ("webkitRequestFullscreen" in document.documentElement) {
+            await (
+              document.documentElement as HTMLElement & {
+                webkitRequestFullscreen: () => Promise<void>;
+              }
+            ).webkitRequestFullscreen();
+          } else if ("msRequestFullscreen" in document.documentElement) {
+            await (
+              document.documentElement as HTMLElement & {
+                msRequestFullscreen: () => Promise<void>;
+              }
+            ).msRequestFullscreen();
           }
 
           setIsFullscreen(true);
@@ -181,6 +184,71 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
   }, [isVisible]);
 
+  // --- Fix 4: handleProgressMouseDown ---
+  const handleProgressMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
+    setIsDragging(true);
+    // Create a synthetic event to match the expected type
+    const syntheticEvent = {
+      ...e,
+      target: e.target as HTMLInputElement,
+    } as React.ChangeEvent<HTMLInputElement>;
+    handleProgressChange(syntheticEvent);
+  };
+  const handleExit = useCallback(() => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    if (exitTimeoutRef.current) {
+      clearTimeout(exitTimeoutRef.current);
+    }
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+
+    // Exit fullscreen
+    if (document.fullscreenElement) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if ("mozCancelFullScreen" in document) {
+        (
+          document as Document & { mozCancelFullScreen: () => void }
+        ).mozCancelFullScreen();
+      } else if ("webkitExitFullscreen" in document) {
+        (
+          document as Document & { webkitExitFullscreen: () => void }
+        ).webkitExitFullscreen();
+      } else if ("msExitFullscreen" in document) {
+        (
+          document as Document & { msExitFullscreen: () => void }
+        ).msExitFullscreen();
+      }
+    }
+
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+
+    setIsPlaying(false);
+    setExitAttemptCount(0);
+    setShowControls(true);
+
+    if (onExit) {
+      onExit();
+    }
+  }, [onExit]);
+  const handleExitAttempt = useCallback(() => {
+    if (exitAttemptCount === 0) {
+      setExitAttemptCount(1);
+      setShowControls(true);
+
+      exitTimeoutRef.current = setTimeout(() => {
+        setExitAttemptCount(0);
+      }, 5000);
+    } else {
+      handleExit();
+    }
+  }, [exitAttemptCount, handleExit]);
+
   // Handle keyboard events for ESC key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -198,7 +266,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown, { capture: true });
     };
-  }, [isVisible, exitAttemptCount]);
+  }, [isVisible, exitAttemptCount, handleExitAttempt]);
 
   // Handle fullscreen change events
   useEffect(() => {
@@ -231,7 +299,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         handleFullscreenChange
       );
     };
-  }, [isVisible, exitAttemptCount]);
+  }, [isVisible, exitAttemptCount, handleExitAttempt]);
 
   // ENHANCED VIDEO EVENT HANDLING WITH MULTIPLE DURATION SOURCES
   useEffect(() => {
@@ -300,11 +368,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const handleError = (e: Event) => {
       console.error("Video error:", e);
       setIsLoading(false);
-      toast({
-        title: "Video Error",
-        description: "Failed to load video. Please try a different quality.",
-        variant: "destructive",
-      });
+      toast.error("Failed to load video. Please try a different quality.");
     };
 
     const handleProgress = () => {
@@ -384,55 +448,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [isPlaying, isVisible]);
 
   // Handle exit attempts
-  const handleExitAttempt = () => {
-    if (exitAttemptCount === 0) {
-      setExitAttemptCount(1);
-      setShowControls(true);
-
-      exitTimeoutRef.current = setTimeout(() => {
-        setExitAttemptCount(0);
-      }, 5000);
-    } else {
-      handleExit();
-    }
-  };
-
-  const handleExit = () => {
-    if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current);
-    }
-    if (exitTimeoutRef.current) {
-      clearTimeout(exitTimeoutRef.current);
-    }
-
-    if (videoRef.current) {
-      videoRef.current.pause();
-    }
-
-    // Exit fullscreen
-    if (document.fullscreenElement) {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if ((document as any).mozCancelFullScreen) {
-        (document as any).mozCancelFullScreen();
-      } else if ((document as any).webkitExitFullscreen) {
-        (document as any).webkitExitFullscreen();
-      } else if ((document as any).msExitFullscreen) {
-        (document as any).msExitFullscreen();
-      }
-    }
-
-    document.documentElement.style.overflow = "";
-    document.body.style.overflow = "";
-
-    setIsPlaying(false);
-    setExitAttemptCount(0);
-    setShowControls(true);
-
-    if (onExit) {
-      onExit();
-    }
-  };
 
   // Volume control functions
   const handleVolumeChange = (newVolume: number) => {
@@ -489,11 +504,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } else {
       video.play().catch((error) => {
         console.error("Play failed:", error);
-        toast({
-          title: "Playback Error",
-          description: "Failed to play video. Please try again.",
-          variant: "destructive",
-        });
+        toast.error("Failed to play video. Please try again.");
       });
     }
 
@@ -504,12 +515,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleVideoClick = (e: React.MouseEvent) => {
     e.preventDefault();
     togglePlay();
-  };
-
-  // Enhanced progress handling with drag support
-  const handleProgressMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
-    setIsDragging(true);
-    handleProgressChange(e as any);
   };
 
   const handleProgressMouseUp = () => {
@@ -591,10 +596,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       }, 100);
 
-      toast({
-        title: "Quality Changed",
-        description: `Video quality set to ${quality}`,
-      });
+      toast.success(`Video quality set to ${quality}`);
     }
 
     setShowQualityMenu(false);
@@ -629,20 +631,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       });
 
-      toast({
-        title: "Subtitles Enabled",
-        description: `${track.label} subtitles are now active`,
-      });
+      toast.success(`${track.label} subtitles are now active`);
     } else {
       const textTracks = video.textTracks;
       for (let i = 0; i < textTracks.length; i++) {
         textTracks[i].mode = "hidden";
       }
 
-      toast({
-        title: "Subtitles Disabled",
-        description: "Subtitles have been turned off",
-      });
+      toast.error("Subtitles have been turned off");
     }
 
     setShowSubtitleMenu(false);
@@ -713,7 +709,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {currentQuality}
       </div>
 
-
       {/* Exit attempt indicator */}
       {exitAttemptCount > 0 && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-black bg-opacity-95 text-white px-8 py-6 rounded-lg">
@@ -766,7 +761,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* ALWAYS VISIBLE PROGRESS BAR */}
       <div className="absolute bottom-20 left-0 right-0 z-20 px-6 flex items-center justify-between gap-1 lg:gap-3">
-        <div className={`text-muted ${isProgressHovered ? 'text-sm' : 'text-xs'}`}>
+        <div
+          className={`text-muted ${isProgressHovered ? "text-sm" : "text-xs"}`}
+        >
           {formatTime(currentTime)}
         </div>
         <div
@@ -812,7 +809,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </div>
           )}
         </div>
-        <div className={`text-muted ${isProgressHovered ? 'text-sm' : 'text-xs'}`}>
+        <div
+          className={`text-muted ${isProgressHovered ? "text-sm" : "text-xs"}`}
+        >
           {formatTime(duration)}
         </div>
       </div>
@@ -983,9 +982,51 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <button
               onClick={() => {
                 if (document.fullscreenElement) {
-                  document.exitFullscreen();
+                  if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                  } else if ("mozCancelFullScreen" in document) {
+                    (
+                      document as Document & { mozCancelFullScreen: () => void }
+                    ).mozCancelFullScreen();
+                  } else if ("webkitExitFullscreen" in document) {
+                    (
+                      document as Document & {
+                        webkitExitFullscreen: () => void;
+                      }
+                    ).webkitExitFullscreen();
+                  } else if ("msExitFullscreen" in document) {
+                    (
+                      document as Document & { msExitFullscreen: () => void }
+                    ).msExitFullscreen();
+                  }
                 } else {
-                  document.documentElement.requestFullscreen();
+                  if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                  } else if (
+                    "mozRequestFullScreen" in document.documentElement
+                  ) {
+                    (
+                      document.documentElement as HTMLElement & {
+                        mozRequestFullScreen: () => void;
+                      }
+                    ).mozRequestFullScreen();
+                  } else if (
+                    "webkitRequestFullscreen" in document.documentElement
+                  ) {
+                    (
+                      document.documentElement as HTMLElement & {
+                        webkitRequestFullscreen: () => void;
+                      }
+                    ).webkitRequestFullscreen();
+                  } else if (
+                    "msRequestFullscreen" in document.documentElement
+                  ) {
+                    (
+                      document.documentElement as HTMLElement & {
+                        msRequestFullscreen: () => void;
+                      }
+                    ).msRequestFullscreen();
+                  }
                 }
               }}
               className="text-white focus:outline-none hover:text-[#D5FF01] transition-colors duration-200"

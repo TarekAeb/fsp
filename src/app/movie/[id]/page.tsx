@@ -12,7 +12,7 @@ import MovieDescription from "@/components/movie/MovieDescription";
 import CastSection from "@/components/movie/CastSection";
 
 type Movie = {
-  id: string;
+  id: number;
   title: string;
   description: string;
   durationMinutes: number;
@@ -20,6 +20,7 @@ type Movie = {
   posterUrl: string;
   releaseDate: string | Date;
   videoUrl?: string | null;
+  type: "short_movie" | "documentary" | "animation";
 };
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());

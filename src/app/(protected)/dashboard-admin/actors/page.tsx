@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Pencil, Trash2, Upload, X } from "lucide-react";
 import { useEffect } from "react";
-import Image from "next/image";
 
 
 interface Actor {

@@ -51,7 +51,7 @@ export async function GET(
           isDefault: sub.isDefault
         };
         return acc;
-      }, {} as Record<string, any>)
+      }, {} as Record<string, unknown>)
     };
     
     return NextResponse.json(videoData);

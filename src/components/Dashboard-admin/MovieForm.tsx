@@ -12,10 +12,21 @@ import { toast } from "sonner";
 import MovieImageUpload from "./MovieImageUpload";
 import VideoUpload from "./VideoUpload";
 import SubtitleUpload from "./SubtitleUpload";
-
+interface MovieData {
+  title: string;
+  description: string;
+  releaseDate: string | Date;
+  durationMinutes: number | string;
+  rating: number | string;
+  language: string;
+  budget?: number | string;
+  boxOffice?: number | string;
+  trailerUrl?: string;
+  posterUrl?: string;
+}
 interface MovieFormProps {
   movieId?: number;
-  initialData?: any;
+  initialData?: MovieData;
   isEdit?: boolean;
 }
 
@@ -93,7 +104,7 @@ export function MovieForm({ movieId, initialData, isEdit = false }: MovieFormPro
     }
   };
 
-  const handleVideoUploadComplete = (videoData: any) => {
+  const handleVideoUploadComplete = () => {
     toast.success('Video processing completed!');
     // Optionally refresh or update UI
   };

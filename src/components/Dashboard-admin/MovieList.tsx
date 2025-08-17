@@ -86,7 +86,7 @@ export default function MovieList({ movies = [], isLoading = false, error }: Mov
 
   // Filter and sort movies
   const filteredAndSortedMovies = useMemo(() => {
-    let filtered = movies.filter(movie =>
+    const filtered = movies.filter(movie =>
       movie.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       movie.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       movie.language.toLowerCase().includes(searchTerm.toLowerCase())

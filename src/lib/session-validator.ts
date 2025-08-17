@@ -10,7 +10,7 @@ export async function validateSession() {
   }
 
   // Check if the database session still exists
-  const sessionId = (session as any).sessionId
+  const sessionId = (session as { sessionId?: string }).sessionId
   if (sessionId) {
     const dbSession = await SessionStore.getSession(sessionId)
     if (!dbSession) {

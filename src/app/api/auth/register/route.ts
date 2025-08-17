@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const validation = registerSchema.safeParse(body)
     
     if (!validation.success) {
-      const errors = validation.error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
+      const errors = validation.error.issues.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
       console.log("Validation failed:", errors)
       return NextResponse.json(
         { error: `Validation failed: ${errors}` },

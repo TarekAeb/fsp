@@ -1,17 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(req: any) {
+export function middleware(req: NextRequest) {
   const { nextUrl, cookies } = req;
   const isLoggedIn = Boolean(
     cookies.get("next-auth.session-token") ||
       cookies.get("__Secure-next-auth.session-token")
   );
 
-  console.log("Middleware:", {
-    path: nextUrl.pathname,
-    isLoggedIn,
-    hasAuth: !!req.auth,
-  });
 
   // Allow API routes (important for NextAuth)
   if (nextUrl.pathname.startsWith("/api")) {

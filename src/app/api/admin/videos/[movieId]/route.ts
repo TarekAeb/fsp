@@ -1,7 +1,6 @@
 // src/app/api/admin/videos/[movieId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import authConfig from "@/auth"
-import { getServerSession } from "next-auth";
+
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { unlink } from "fs/promises";

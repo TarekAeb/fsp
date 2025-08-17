@@ -341,7 +341,7 @@ export default function Search() {
           )}
 
           {/* Top Searched Movies - Only shown when not searching */}
-          {!focus && !debouncedQuery && (
+          {/* {!focus && !debouncedQuery && (
             <div className="mt-8">
               {topMoviesError ? (
                 <div className="text-center py-8">
@@ -362,7 +362,7 @@ export default function Search() {
                 </div>
               )}
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>

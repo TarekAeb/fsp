@@ -5,13 +5,14 @@ import Google from "next-auth/providers/google"
 import GitHub from "next-auth/providers/github"
 import bcryptjs from "bcryptjs"
 import { z } from "zod"
+import type { AuthOptions } from "next-auth"
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 })
 
-const authConfig = {
+const authConfig: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
@@ -125,14 +126,14 @@ const authConfig = {
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
-        token.role = (user as any).role || "USER"
+        token.role = (user as { role?: string }).role || "USER"
       }
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
-        (session.user as any).role = token.role as string
+        (session.user as { role?: string }).role = token.role as string
       }
       return session
     },

@@ -22,7 +22,7 @@ interface Actor extends Person {
 }
 
 interface CastSectionProps {
-    id: string;
+    id: number;
 }
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());

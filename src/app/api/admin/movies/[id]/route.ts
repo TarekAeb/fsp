@@ -25,7 +25,8 @@ export async function PUT(request: NextRequest) {
             trailerUrl: body.trailerUrl || null,
             genres: body.genres || [],
             directors: body.directors || [],
-            cast: body.cast || []
+            cast: body.cast || [],
+            type: body.type || null
         };
 
         const { id } = await updateMovie(parseInt(movieId), movieData);

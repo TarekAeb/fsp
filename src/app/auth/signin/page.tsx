@@ -1,9 +1,8 @@
 import type { FC } from "react";
 import { SignInForm } from "@/components/auth/login-form";
 
-interface LoginPageProps {}
 
-const LoginPage: FC<Readonly<LoginPageProps>> = ({}) => {
+const LoginPage: FC = ({}) => {
   return <SignInForm />;
 };
 

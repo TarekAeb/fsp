@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if database session exists
-    const sessionId = (session as any).sessionId
+    const sessionId = (session as { sessionId?: string }).sessionId
     if (sessionId) {
       const dbSession = await SessionStore.getSession(sessionId)
       if (!dbSession) {

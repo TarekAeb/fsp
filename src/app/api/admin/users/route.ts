@@ -1,33 +1,31 @@
-import { NextRequest, NextResponse } from "next/server"
-import authConfig from "@/auth"
-import { getServerSession } from "next-auth"
-import { prisma } from "@/lib/prisma"
-import { requireRole } from "@/lib/rbac"
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/rbac";
+import { Prisma, UserRole } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   try {
-    await requireRole(["ADMIN", "MODERATOR"])
+    await requireRole(["ADMIN", "MODERATOR"]);
 
-    const { searchParams } = new URL(req.url)
-    const page = parseInt(searchParams.get("page") || "1")
-    const limit = parseInt(searchParams.get("limit") || "10")
-    const search = searchParams.get("search") || ""
-    const role = searchParams.get("role") || "ALL"
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const role = searchParams.get("role") || "ALL";
 
-    const skip = (page - 1) * limit
+    const skip = (page - 1) * limit;
 
-    // Build where clause
-    const where: any = {}
-    
+    const where: Prisma.UserWhereInput = {};
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
-      ]
+      ];
     }
-    
+
     if (role !== "ALL") {
-      where.role = role
+      where.role = role as UserRole; // Cast to enum
     }
 
     // Get users with pagination
@@ -54,21 +52,21 @@ export async function GET(req: NextRequest) {
         },
       }),
       prisma.user.count({ where }),
-    ])
+    ]);
 
-    const totalPages = Math.ceil(totalUsers / limit)
+    const totalPages = Math.ceil(totalUsers / limit);
 
     return NextResponse.json({
       users,
       totalUsers,
       totalPages,
       currentPage: page,
-    })
+    });
   } catch (error) {
-    console.error("Admin users fetch error:", error)
+    console.error("Admin users fetch error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
-    )
+    );
   }
 }

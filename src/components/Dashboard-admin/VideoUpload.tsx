@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 interface VideoUploadProps {
   movieId?: number;
-  onUploadComplete?: (videoData: any) => void;
+  onUploadComplete?: (videoData: unknown) => void; // Replace 'any' with 'unknown' or a specific type
 }
 
 type UploadStatus =

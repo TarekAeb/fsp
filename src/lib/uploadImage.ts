@@ -1,4 +1,4 @@
-import { writeFile } from 'fs/promises';
+import { writeFile ,mkdir } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -37,7 +37,6 @@ export async function uploadImage(file: File, folder: string): Promise<string> {
 
 async function createDirIfNotExists(dirPath: string) {
     try {
-        const { mkdir } = require('fs/promises');
         await mkdir(dirPath, { recursive: true });
     } catch (error) {
         console.error('Error creating directory:', error);

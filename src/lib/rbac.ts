@@ -30,8 +30,12 @@ export const PERMISSIONS = {
 } as const
 
 export function hasPermission(userRole: Role, permission: string): boolean {
-  const rolePermissions = PERMISSIONS[userRole]
-  return rolePermissions && (rolePermissions as any)[permission] === true
+  const rolePermissions = PERMISSIONS[userRole];
+  return (
+    !!rolePermissions &&
+    Object.prototype.hasOwnProperty.call(rolePermissions, permission) &&
+    (rolePermissions as Record<string, boolean>)[permission] === true
+  );
 }
 
 export async function requireRole(requiredRole: Role | Role[]) {
